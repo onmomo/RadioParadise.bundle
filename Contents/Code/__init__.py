@@ -20,7 +20,7 @@ def MainMenu():
 	return oc
 
 ####################################################################################################
-def CreateTrackObject(url, title, include_container=False):
+def CreateTrackObject(url, title, include_container=False, **kwargs):
 
 	track_object = TrackObject(
 		key = Callback(CreateTrackObject, url=url, title=title, include_container=True),
