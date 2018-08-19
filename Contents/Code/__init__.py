@@ -1,5 +1,5 @@
 ART = 'art-default.jpg'
-ICON = 'icon-default.jpg'
+ICON = 'icon-default.png'
 NAME = 'Radio Paradise'
 STREAM_META = 'https://api.radioparadise.com/api/get_block?bitrate=4&info=true'
 
@@ -15,24 +15,30 @@ def Start():
 def MainMenu():
 
 	meta = JSON.ObjectFromURL(url = STREAM_META)
-	Log.Debug(meta['url'])
+	artUrl = 'https:'+ meta['image_base'] + meta['song']['0']['cover']
+	Log.Debug("Loading art work from: %s", artUrl)
+	ObjectContainer.art = artUrl
+	Log.Debug("Streaming RP flac from %s", meta['url'])
 	oc = ObjectContainer()
-	oc.add(CreateTrackObject(url=meta['url'] + '?src=alexa', parts = meta['song'], title=NAME))
+	oc.add(CreateTrackObject(url=meta['url'] + '?src=alexa', length=(meta['length']), title=NAME))
+	
 
 	return oc
 
 ####################################################################################################
-def CreateTrackObject(url, parts, title, include_container=False, **kwargs):
+def CreateTrackObject(url, length, title, include_container=False, **kwargs):
 
 	track_object = TrackObject(
-		key = Callback(CreateTrackObject, url=url, parts = parts, title=title, include_container=True),
+		key = Callback(CreateTrackObject, url=url, length=length, title=title, include_container=True),
 		rating_key = url,
-		title = title,
+		title = title,			
 		items = [
 			MediaObject(
-				parts = getParts(parts),
+				parts = [
+					PartObject(key=Callback(PlayAudio, url=url, ext='flac'))
+				],
+				duration = int(float(length) * 1000),			
 				container = Container.FLAC,
-				bitrate = 900,
 				audio_codec = AudioCodec.FLAC,
 				audio_channels = 2
 			)
@@ -44,17 +50,6 @@ def CreateTrackObject(url, parts, title, include_container=False, **kwargs):
 	else:
 		return track_object
 
-
-def getParts(songs):
-	def toPartObject(songJson):
-  		songsPart = PartObject(key='https://apps.radioparadise.com/blocks/chan/0/4/' + songJson['event'] + '.flac', duration = songJson['duration'])
-		Log.Debug(songsPart.key)
-		Log.Debug(songsPart.duration)
-		return songsPart
-
-	parts = map(toPartObject, songs.values())
-	Log.Debug(parts)
-	return parts[0]
 
 ####################################################################################################
 def PlayAudio(url):
